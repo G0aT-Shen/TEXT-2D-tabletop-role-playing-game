@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "timestamp": "2026-06-28T21:28:53.539339",
+  "multiplayer": false,
+  "player": {
+    "name": "急急急哇哇、",
+    "char_class": "WARRIOR",
+    "level": 1,
+    "xp": 0,
+    "xp_to_next": 70,
+    "stats": {
+      "max_hp": 130,
+      "max_mp": 35,
+      "hp": 130,
+      "mp": 35,
+      "strength": 17,
+      "dexterity": 12,
+      "intelligence": 8,
+      "wisdom": 10,
+      "charisma": 10,
+      "luck": 10
+    },
+    "skills_cooldown": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "items": []
+  },
+  "player2": null,
+  "chapter": {
+    "current_chapter_index": 0,
+    "current_event_index": 0,
+    "flags": {}
+  }
+}

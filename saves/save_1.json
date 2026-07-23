@@ -1,0 +1,76 @@
+{
+  "version": 2,
+  "timestamp": "2026-07-23T15:44:16.699719",
+  "multiplayer": false,
+  "player": {
+    "name": "Hero",
+    "char_class": "WARRIOR",
+    "level": 5,
+    "xp": 36,
+    "xp_to_next": 126,
+    "stats": {
+      "max_hp": 150,
+      "max_mp": 47,
+      "hp": 150,
+      "mp": 47,
+      "strength": 19,
+      "dexterity": 12,
+      "intelligence": 8,
+      "wisdom": 10,
+      "charisma": 10,
+      "luck": 10
+    },
+    "skills_cooldown": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "skills_locked": [
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "skill_points": 1,
+    "_levels_gained": 0,
+    "pending_attr_points": 7,
+    "gold": 200,
+    "shadow_essence": 5,
+    "faction_reputation": {
+      "SHADOW": 0,
+      "DAWN": 100,
+      "OBSERVER": 0
+    },
+    "dawn_shards": 1,
+    "is_ng_plus": false,
+    "ng_plus_level": 0,
+    "items": [],
+    "equipment": {}
+  },
+  "player2": null,
+  "chapter": {
+    "current_chapter_index": 0,
+    "current_event_index": 0,
+    "flags": {
+      "chose_villagers": true,
+      "test": "hello"
+    }
+  }
+}
