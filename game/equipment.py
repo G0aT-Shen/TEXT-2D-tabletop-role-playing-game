@@ -146,7 +146,7 @@ class Equipment:
 
     @classmethod
     def from_dict(cls, data: dict) -> "Equipment":
-        affixes = [AFFIX_MAP.get(n, AFFIX_POOL[0]) for n in data.get("affix_names", [])]
+        affixes = [AFFIX_MAP[n] for n in data.get("affix_names", []) if n in AFFIX_MAP]
         return cls(
             name=data["name"],
             slot=EquipmentSlot(data["slot"]),
@@ -222,11 +222,11 @@ def _pick_affixes(count: int, class_name: str) -> List[Dict]:
     for a in pool:
         w = 3.0 if a["name"] in class_prefer else 1.0
         weighted.extend([a] * int(w * 10))
-    available = set()
-    while len(picked) < count and len(available) < len(pool):
+    while len(picked) < min(count, len(pool)):
         affix = random.choice(weighted)
         if affix["name"] not in [p["name"] for p in picked]:
             picked.append(affix)
+            weighted = [candidate for candidate in weighted if candidate["name"] != affix["name"]]
     return picked
 
 
@@ -255,7 +255,7 @@ def generate_equipment(character_class: str, preferred_slot: Optional[EquipmentS
         elif roll < 0.80:
             slot = EquipmentSlot.ARMOR
         else:
-            slot = EquipmentSlot.ACCESSORY_1
+            slot = random.choice([EquipmentSlot.ACCESSORY_1, EquipmentSlot.ACCESSORY_2])
 
     # 选择模板
     if slot == EquipmentSlot.WEAPON:
@@ -279,7 +279,7 @@ def generate_equipment(character_class: str, preferred_slot: Optional[EquipmentS
 
     return Equipment(
         name=tmpl["name"],
-        slot=tmpl["slot"],
+        slot=slot,
         rarity=rarity,
         base_attack=tmpl.get("base_attack", 0),
         base_defense=tmpl.get("base_defense", 0),

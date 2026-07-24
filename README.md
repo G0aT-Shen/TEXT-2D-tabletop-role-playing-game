@@ -41,9 +41,10 @@
 
 ### 工程
 - 💾 **存档系统** — 3个 JSON 存档槽位，完整序列化（角色属性/装备/技能解锁/阵营声望/章节进度），自动存档
-- 📦 **单文件打包** — PyInstaller 支持，可编译为独立 exe
+- 📦 **单文件打包** — PyInstaller 支持，可通过 `build_exe.py` 编译为独立 exe
 - 🖥️ **跨平台字体** — 自动检测 Windows/macOS/Linux 中文字体
 - 🧙 **神秘商人** — 章节过渡时开放，出售装备/消耗品/暗影精华商品
+- ✅ **自动化测试** — 覆盖装备、检定奖励、存档、章节数据和商店库存等核心逻辑
 
 ## 职业
 
@@ -74,10 +75,26 @@ python main.py
 ### 打包为 exe
 
 ```bash
-python -m PyInstaller --onefile --noconsole --clean --name "绝夜之旅" --add-data "game;game" main.py
+python build_exe.py
 ```
 
-输出在 `dist/绝夜之旅.exe`。
+输出在 `dist/绝夜之旅.exe`。常用选项：
+
+```bash
+python build_exe.py --console       # 保留控制台窗口，便于排查启动错误
+python build_exe.py --no-clean      # 复用 PyInstaller 构建缓存
+python build_exe.py --name MyGame   # 自定义输出文件名
+```
+
+### 运行测试
+
+项目使用 Python 标准库 `unittest`，无需额外测试框架：
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+测试覆盖装备属性与槽位、检定结果奖励、存档往返、剧情 DC 一致性、战斗引用和商店库存隔离。
 
 ## 操作
 
@@ -100,8 +117,9 @@ python -m PyInstaller --onefile --noconsole --clean --name "绝夜之旅" --add-
 
 ```
 main.py                     # 入口
-build_exe.py                # PyInstaller 打包配置
+build_exe.py                # PyInstaller 打包入口
 run.bat                     # Windows 快速启动脚本
+tests/                      # 核心逻辑回归测试
 GDD_设计文档.md              # 完整游戏设计文档（v1.2）
 game/
 ├── __init__.py

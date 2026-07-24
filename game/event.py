@@ -109,16 +109,25 @@ class EventManager:
             if roll_result == RollResult.CRITICAL_SUCCESS:
                 result["result_text"] = choice.critical_success_text or choice.success_text or choice.result_text
                 result["xp_reward"] = int(result["xp_reward"] * 2)
+                result["hp_change"] = 0
+                result["mp_change"] = 0
                 result["is_critical_success"] = True
             elif roll_result == RollResult.CRITICAL_FAILURE:
                 result["result_text"] = choice.critical_failure_text or choice.failure_text or choice.result_text
-                result["hp_change"] = result["hp_change"] * 2 if result["hp_change"] < 0 else -10
+                result["xp_reward"] = 0
+                result["item_reward"] = None
                 result["is_critical_failure"] = True
             elif roll_result == RollResult.SUCCESS:
                 result["result_text"] = choice.success_text or choice.result_text
+                result["hp_change"] = 0
+                result["mp_change"] = 0
+                result["item_reward"] = None
             else:
                 result["result_text"] = choice.failure_text or choice.result_text
+                result["hp_change"] = 0
+                result["mp_change"] = 0
                 result["xp_reward"] = 0
+                result["item_reward"] = None
 
             self.last_roll_info = result["roll_info"]
 
@@ -186,7 +195,7 @@ class EventManager:
             "int": self.character.int_mod,
             "wis": self.character.wis_mod,
             "cha": self.character.cha_mod,
-            "luck": self.character.stats.luck // 2,  # 幸运特殊处理
+            "luck": self.character.luck // 2,  # 幸运特殊处理
         }
         return mapping.get(check_type, 0)
 

@@ -183,23 +183,28 @@ class Character:
     # --- 属性调整值 ---
     @property
     def str_mod(self) -> int:
-        return get_modifier(self.stats.strength)
+        return get_modifier(self.stats.strength + self.get_equipment_stat_bonus("strength"))
 
     @property
     def dex_mod(self) -> int:
-        return get_modifier(self.stats.dexterity)
+        return get_modifier(self.stats.dexterity + self.get_equipment_stat_bonus("dexterity"))
 
     @property
     def int_mod(self) -> int:
-        return get_modifier(self.stats.intelligence)
+        return get_modifier(self.stats.intelligence + self.get_equipment_stat_bonus("intelligence"))
 
     @property
     def wis_mod(self) -> int:
-        return get_modifier(self.stats.wisdom)
+        return get_modifier(self.stats.wisdom + self.get_equipment_stat_bonus("wisdom"))
 
     @property
     def cha_mod(self) -> int:
-        return get_modifier(self.stats.charisma)
+        return get_modifier(self.stats.charisma + self.get_equipment_stat_bonus("charisma"))
+
+    @property
+    def luck(self) -> int:
+        """包含装备加成的有效幸运值。"""
+        return self.stats.luck + self.get_equipment_stat_bonus("luck")
 
     @property
     def attack_bonus(self) -> int:
@@ -213,7 +218,7 @@ class Character:
     @property
     def defense(self) -> int:
         """防御值。"""
-        base = 10 + self.dex_mod
+        base = 10 + self.dex_mod + self.get_equipment_defense()
         if self.defending:
             base += 4
         return base
@@ -263,16 +268,23 @@ class Character:
 
     def get_equipment_stat_bonus(self, stat_name: str) -> int:
         """装备提供的某项属性加值。"""
+        long_to_short = {
+            "strength": "str", "dexterity": "dex", "intelligence": "int",
+            "wisdom": "wis", "charisma": "cha", "luck": "luk",
+        }
+        short_to_long = {short: long for long, short in long_to_short.items()}
+        canonical = short_to_long.get(stat_name, stat_name)
+        short = long_to_short.get(canonical)
+        stat_keys = {canonical}
+        if short:
+            stat_keys.add(short)
+        effect_keys = {f"{key}_bonus" for key in stat_keys}
+
         total = 0
         for eq in self.equipment.values():
-            total += eq.stat_bonuses.get(stat_name, 0)
+            total += sum(eq.stat_bonuses.get(key, 0) for key in stat_keys)
             for a in eq.affixes:
-                key_map = {"str": "strength", "dex": "dexterity", "int": "intelligence",
-                            "wis": "wisdom", "cha": "charisma", "luk": "luck"}
-                total += a["effect"].get(f"{stat_name}_bonus", 0)
-                # 兼容短名
-                short = {v: k for k, v in key_map.items()}
-                total += a["effect"].get(f"{short.get(stat_name, stat_name)}_bonus", 0)
+                total += sum(a["effect"].get(key, 0) for key in effect_keys)
         return total
 
     def has_equipment_affix(self, affix_name: str) -> bool:
@@ -298,11 +310,8 @@ class Character:
     def _recalc_stats(self):
         """重新计算装备影响后的属性（不改base stats，只调整hp/mp上限）。"""
         base = CLASS_STATS[self.char_class]
-        eq_hp_bonus = sum(eq.stat_bonuses.get("max_hp", 0) for eq in self.equipment.values())
-        eq_mp_bonus = self.get_equipment_stat_bonus("max_mp") + sum(
-            a["effect"].get("max_mp_bonus", 0) for eq in self.equipment.values()
-            for a in eq.affixes
-        )
+        eq_hp_bonus = self.get_equipment_stat_bonus("max_hp")
+        eq_mp_bonus = self.get_equipment_stat_bonus("max_mp")
         level_hp_bonus = (self.level - 1) * 10
         level_mp_bonus = (self.level - 1) * 6
 
@@ -597,4 +606,6 @@ class Character:
                     char.equipment[slot_key] = Equipment.from_dict(eq_dict)
                 except Exception:
                     pass
+            # 同时修正旧版本中装备上限加成重复计算形成的存档数值。
+            char._recalc_stats()
         return char

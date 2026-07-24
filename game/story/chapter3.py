@@ -31,7 +31,7 @@ def get_chapter3() -> Chapter:
                     xp_reward=40,
                 ),
                 Choice(
-                    text="走地底隧道（DEX检定 DC=14）",
+                    text="走地底隧道（DEX检定 DC=12）",
                     result_text="你悄悄潜入古老的地底隧道。",
                     check_type="dex", dc=12,
                     success_text="隧道虽然阴暗逼仄，但确实安全地绕过了军团营地。你在隧道中发现了古代文明留下的壁画，描绘着光明与黑暗的战争——绝夜之神曾经也是光明的守护者，因为某种背叛才堕入黑暗。",
@@ -61,7 +61,7 @@ def get_chapter3() -> Chapter:
             event_type=EventType.CHOICE,
             choices=[
                 Choice(
-                    text="潜入要塞后勤通道（DEX检定 DC=15）",
+                    text="潜入要塞后勤通道（DEX检定 DC=13）",
                     result_text="你绕到要塞侧面，尝试从后勤通道潜入。",
                     check_type="dex", dc=13,
                     success_text="你成功潜入了要塞内部！避开了正面的大军，直接深入了要塞的核心区域。一路上你看到了深渊军团的后勤补给线和武器库——如果破坏了这些，外面的军团将不战自溃。",
@@ -73,7 +73,7 @@ def get_chapter3() -> Chapter:
                     flags_set={"infiltrated": True},
                 ),
                 Choice(
-                    text="正面突袭，斩首指挥官（STR检定 DC=16）",
+                    text="正面突袭，斩首指挥官（STR检定 DC=14）",
                     result_text="你怒吼一声，直接冲向军团指挥官！",
                     check_type="str", dc=14,
                     success_text="你在乱军中杀出一条血路，直取指挥官！虽然没能歼灭全部军团，但指挥官的死亡让深渊军团陷入了群龙无首的混乱。",
@@ -102,7 +102,7 @@ def get_chapter3() -> Chapter:
             event_type=EventType.CHOICE,
             choices=[
                 Choice(
-                    text="用智谋破坏仪式（INT检定 DC=15）",
+                    text="用智谋破坏仪式（INT检定 DC=13）",
                     result_text="你仔细观察仪式的结构，寻找破解之法。",
                     check_type="int", dc=13,
                     success_text="你发现了仪式的关键节点——四角的幽蓝火焰必须同时熄灭。你利用要塞中的反射镜巧妙地将月光引导进来，同时扑灭了所有火焰。仪式中断，深渊祭司们被黑暗能量反噬，化为灰烬。",

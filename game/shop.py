@@ -62,7 +62,7 @@ def get_equipment_shop_items(chapter_id: int, player_class: str) -> List[ShopIte
 
     for _ in range(3):
         rarity = random.choice(rarities)
-        slot = random.choice([EquipmentSlot.WEAPON, EquipmentSlot.ARMOR, EquipmentSlot.ACCESSORY_1])
+        slot = random.choice(list(EquipmentSlot))
         eq = generate_equipment(player_class, preferred_slot=slot, rarity=rarity)
         if eq:
             price = price_by_rarity.get(eq.rarity.name, 100)

@@ -89,7 +89,7 @@ class Enemy:
         for effect in self.status_effects[:]:
             effect["duration"] -= 1
             if effect.get("type") == "poison":
-                self.hp -= effect.get("damage", 5)
+                self.hp = max(0, self.hp - effect.get("damage", 5))
             if effect["duration"] <= 0:
                 self.status_effects.remove(effect)
 

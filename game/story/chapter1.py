@@ -23,7 +23,7 @@ def get_chapter1() -> Chapter:
             event_type=EventType.TRAIN,
             choices=[
                 Choice(
-                    text="警惕地观察四周（WIS检定 DC=12）",
+                    text="警惕地观察四周（WIS检定 DC=10）",
                     result_text="你察觉到空气中弥漫着不祥的气息，这里绝非正常的世界。",
                     check_type="wis", dc=10,
                     success_text="你的感知异常敏锐——你注意到车厢末端有个黑影一闪而过，似乎有什么东西潜入了列车。",
@@ -35,7 +35,7 @@ def get_chapter1() -> Chapter:
                     flags_set={"intro_approach": "cautious"},
                 ),
                 Choice(
-                    text="与其他乘客交谈收集信息（CHA检定 DC=10）",
+                    text="与其他乘客交谈收集信息（CHA检定 DC=8）",
                     result_text="你开始与周围的乘客攀谈，试图了解情况。",
                     check_type="cha", dc=8,
                     success_text="一位老者告诉你古老的传说：每隔百年，会有一辆列车驶入「绝夜之境」。能回到黎明的人，将获得改写命运的资格。但这辆列车从未有人真正离开过……",
@@ -47,7 +47,7 @@ def get_chapter1() -> Chapter:
                     flags_set={"intro_approach": "social"},
                 ),
                 Choice(
-                    text="前往驾驶室查看情况（STR检定 DC=10）",
+                    text="前往驾驶室查看情况（STR检定 DC=8）",
                     result_text="你决定直接前往列车前方，弄清到底发生了什么。",
                     check_type="str", dc=8,
                     success_text="你用力推开了因变形而卡住的车厢门，来到驾驶室。列车长已经失踪，仪表盘上显示列车正以不可思议的速度驶向未知的坐标。你紧急拉下了制动闸——但列车并未减速。",
@@ -84,7 +84,7 @@ def get_chapter1() -> Chapter:
                     flags_set={"first_battle": "won"},
                 ),
                 Choice(
-                    text="迅速组织乘客们撤离到下一节车厢（DEX检定 DC=13）",
+                    text="迅速组织乘客们撤离到下一节车厢（DEX检定 DC=11）",
                     result_text="你选择优先保护无辜的乘客。",
                     check_type="dex", dc=11,
                     success_text="你灵活地引导乘客们有序撤离，成功将所有人转移到了安全的车厢。暗影狼不敢追入明亮的区域。",
@@ -114,7 +114,7 @@ def get_chapter1() -> Chapter:
             event_type=EventType.STORY,
             choices=[
                 Choice(
-                    text="搜寻列车残骸中的资源（INT检定 DC=12）",
+                    text="搜寻列车残骸中的资源（INT检定 DC=10）",
                     result_text="你在扭曲的金属中找到了一些还能用的物资。",
                     check_type="int", dc=10,
                     success_text="你从残骸中找出了医疗用品、食物和一张残破的地图。地图上标注着一条蜿蜒穿越森林的小路，通向远处的城堡。",
@@ -127,7 +127,7 @@ def get_chapter1() -> Chapter:
                     flags_set={"found_map": True},
                 ),
                 Choice(
-                    text="安抚受伤的幸存者（CHA检定 DC=13）",
+                    text="安抚受伤的幸存者（CHA检定 DC=11）",
                     result_text="你用温和的话语平复众人的恐惧。",
                     check_type="cha", dc=11,
                     success_text="你的话语给了幸存者们希望。一位受伤的旅客主动站出来：「我知道一些关于这片森林的事，我的祖父曾经来过这里……」",
@@ -137,7 +137,7 @@ def get_chapter1() -> Chapter:
                     xp_reward=25,
                 ),
                 Choice(
-                    text="侦察周围环境（DEX检定 DC=11）",
+                    text="侦察周围环境（DEX检定 DC=9）",
                     result_text="你悄悄绕到列车周围，探查这片陌生的大地。",
                     check_type="dex", dc=9,
                     success_text="你发现列车脱轨并非意外——铁轨被人为破坏！附近地上还有巨大的爪印，通往森林方向。你还在不远处发现了一处隐蔽的洞穴，似乎可以暂时栖身。",
@@ -166,7 +166,7 @@ def get_chapter1() -> Chapter:
             event_type=EventType.CHOICE,
             choices=[
                 Choice(
-                    text="🆘 拯救被困的幸存者（CHA检定 DC=12）",
+                    text="🆘 拯救被困的幸存者（CHA检定 DC=10）",
                     result_text="你选择不放弃任何生命，转身奔向呼救声的来源。",
                     check_type="cha", dc=10,
                     success_text="你成功找到了一个被困在倒下的树木下的商人。他感激涕零：「谢谢你！我叫马库斯，可以在列车上为你提供补给。这是我欠你的。」",
@@ -180,7 +180,7 @@ def get_chapter1() -> Chapter:
                     flags_set={"chose_villagers": True, "met_marcus": True},
                 ),
                 Choice(
-                    text="🐺 追击逃窜的暗影狼（DEX检定 DC=14）",
+                    text="🐺 追击逃窜的暗影狼（DEX检定 DC=12）",
                     result_text="你决定追踪狼群——它们可能引领你发现更大的秘密。",
                     check_type="dex", dc=12,
                     success_text="你凭借敏捷的身手追上了狼群。它们逃入了一个隐蔽的洞穴——那是暗影生物的聚集地。你在洞穴口发现了一些宝贵的补给和装备。",
@@ -244,7 +244,7 @@ def get_chapter1() -> Chapter:
                     flags_set={"closed_portal": True},
                 ),
                 Choice(
-                    text="🧠 研究传送门的符文（INT检定 DC=14）",
+                    text="🧠 研究传送门的符文（INT检定 DC=12）",
                     result_text="你决定先弄清楚这道传送门的运作原理。",
                     check_type="int", dc=12,
                     success_text="你成功解读了符文——这是深渊领主布下的传送网络。你不仅关闭了它，还获得了关于深渊军团的重要情报。",
@@ -281,7 +281,7 @@ def get_chapter1() -> Chapter:
                     xp_reward=35,
                 ),
                 Choice(
-                    text="走右边——寻找水源（WIS检定 DC=13）",
+                    text="走右边——寻找水源（WIS检定 DC=11）",
                     result_text="你跟随水声探索前进。",
                     check_type="wis", dc=11,
                     success_text="你成功找到了森林中的一处清泉！虽然泉水泛着微弱的荧光，但经过检测是无毒的。幸存者们补充了水分，体力恢复了不少。",
@@ -292,7 +292,7 @@ def get_chapter1() -> Chapter:
                     xp_reward=25,
                 ),
                 Choice(
-                    text="走中间——攀爬岩壁捷径（STR检定 DC=14）",
+                    text="走中间——攀爬岩壁捷径（STR检定 DC=12）",
                     result_text="你选择挑战陡峭的岩壁。",
                     check_type="str", dc=12,
                     success_text="虽然过程艰难，但你成功带领大家翻越了岩壁，节省了大量时间。前方，那座阴森的城堡已经清晰可见。",
@@ -328,7 +328,7 @@ def get_chapter1() -> Chapter:
                     flags_set={"defeated_knight": True},
                 ),
                 Choice(
-                    text="尝试说服他回忆过去的荣耀（CHA检定 DC=16）",
+                    text="尝试说服他回忆过去的荣耀（CHA检定 DC=14）",
                     result_text="你试图唤起骑士心中残存的良知。",
                     check_type="cha", dc=14,
                     success_text="你的话语触动了他内心深处的记忆。堕落骑士单膝跪地：「你……让我想起了我曾经守护的东西。请进吧，但请小心——城堡的主人是暗影巨龙，它的力量远超你的想象。」",

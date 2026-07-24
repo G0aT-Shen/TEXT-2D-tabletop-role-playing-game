@@ -352,7 +352,7 @@ class Game:
                     else:
                         self.combat.log.append(f"🎒 [{current_p.name}] 背包为空！")
                 elif self.combat_selected_action == 4:  # 逃跑
-                    luck_result, _ = Dice.luck_check(current_p.stats.luck)
+                    luck_result, _ = Dice.luck_check(current_p.luck)
                     if luck_result.value in ("critical_success", "success"):
                         self.combat.escaped = True
                         self.combat.combat_over = True
@@ -754,9 +754,10 @@ class Game:
             if ch and ch.is_final:
                 self.state = GameState.ENDING
                 return
+            completed_chapter_id = ch.chapter_id if ch else 1
             self.chapter_manager.advance_chapter()
             # 章节完成奖励：晨曦碎片 + 阵营声望 + 全队回复
-            self._award_chapter_completion()
+            self._award_chapter_completion(completed_chapter_id)
             if self.chapter_manager.is_game_complete:
                 self.state = GameState.GAME_WIN
                 return
@@ -780,33 +781,33 @@ class Game:
 
     def _open_shop(self):
         """打开神秘商人商店。"""
+        import copy
         from .shop import SHOP_CONSUMABLES, get_equipment_shop_items, SHADOW_ESSENCE_ITEMS
         ch = self.chapter_manager.current_chapter
         chapter_id = ch.chapter_id if ch else 1
-        items = list(SHOP_CONSUMABLES)
+        # 商店模板是全局对象；每次营业使用副本，避免库存污染后续章节或新游戏。
+        items = copy.deepcopy(SHOP_CONSUMABLES)
         # 添加装备
         items.extend(get_equipment_shop_items(chapter_id, self.player.char_class.name))
         # 添加暗影精华商店
-        items.extend(SHADOW_ESSENCE_ITEMS)
+        items.extend(copy.deepcopy(SHADOW_ESSENCE_ITEMS))
         self.shop_items = items
         self.shop_selected = 0
         self.shop_message = ""
         self.state = GameState.SHOP
 
-    def _award_chapter_completion(self):
+    def _award_chapter_completion(self, completed_chapter_id: int):
         """章节完成奖励。"""
         # 晨曦碎片：每章1个
         for p in self._all_players():
             p.dawn_shards += 1
         self.event_log.append(f"✨ 获得晨曦碎片！(共{self.player.dawn_shards}块)")
         # 阵营声望：根据章节给予额外声望
-        ch = self.chapter_manager.current_chapter
-        chapter_id = ch.chapter_id if ch else 1
-        if chapter_id == 1:
+        if completed_chapter_id == 1:
             faction_bonus = {"DAWN": 20}
-        elif chapter_id == 2:
+        elif completed_chapter_id == 2:
             faction_bonus = {"OBSERVER": 20}
-        elif chapter_id == 3:
+        elif completed_chapter_id == 3:
             faction_bonus = {"SHADOW": 20, "DAWN": 10}
         else:
             faction_bonus = {}

@@ -1,54 +1,54 @@
-# -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller 打包配置 — 单文件 exe 输出。
+"""Build the Windows executable with PyInstaller."""
 
-运行方式:
-    C:\Python314\python.exe -m PyInstaller --onefile --noconsole --clean --name "绝夜之旅" --add-data "game;game" main.py
-"""
+import argparse
+import os
+from pathlib import Path
 
-# 也可作为 .spec 文件直接使用:
-#   C:\Python314\python.exe -m PyInstaller build_exe.spec
 
-a = Analysis(
-    ['main.py'],
-    pathex=[],
-    binaries=[],
-    datas=[('game/', 'game/')],
-    hiddenimports=[
-        'pygame', 'game', 'game.engine', 'game.dice', 'game.character',
-        'game.combat', 'game.event', 'game.chapter', 'game.ui', 'game.save',
-        'game.items', 'game.equipment', 'game.skill_tree', 'game.shop',
-        'game.faction', 'game.scene_renderer',
-        'game.story', 'game.story.chapter1', 'game.story.chapter2',
-        'game.story.chapter3', 'game.story.chapter4',
-    ],
-    hookspath=[],
-    hooksconfig={},
-    runtime_hooks=[],
-    excludes=[],
-    noarchive=False,
-    optimize=0,
-)
+HIDDEN_IMPORTS = [
+    "game.story.chapter1",
+    "game.story.chapter2",
+    "game.story.chapter3",
+    "game.story.chapter4",
+]
 
-pyz = PYZ(a.pure)
 
-exe = EXE(
-    pyz,
-    a.scripts,
-    a.binaries,
-    a.datas,
-    [],
-    name='绝夜之旅',
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,
-    console=False,
-    disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
-    icon=None,
-)
+def parse_args():
+    parser = argparse.ArgumentParser(description="Build 绝夜之旅 as a single-file executable.")
+    parser.add_argument("--name", default="绝夜之旅", help="Output executable name.")
+    parser.add_argument("--console", action="store_true", help="Keep a console window for diagnostics.")
+    parser.add_argument("--no-clean", action="store_true", help="Reuse PyInstaller's build cache.")
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    try:
+        from PyInstaller.__main__ import run
+    except ImportError as exc:
+        raise SystemExit(
+            "PyInstaller is not installed. Run: python -m pip install pyinstaller"
+        ) from exc
+
+    project_dir = Path(__file__).resolve().parent
+    command = [
+        str(project_dir / "main.py"),
+        "--onefile",
+        "--name", args.name,
+        "--distpath", str(project_dir / "dist"),
+        "--workpath", str(project_dir / "build"),
+        "--specpath", str(project_dir),
+        "--add-data", f"{project_dir / 'game'}{os.pathsep}game",
+    ]
+    if not args.console:
+        command.append("--noconsole")
+    if not args.no_clean:
+        command.append("--clean")
+    for module in HIDDEN_IMPORTS:
+        command.extend(["--hidden-import", module])
+
+    run(command)
+
+
+if __name__ == "__main__":
+    main()

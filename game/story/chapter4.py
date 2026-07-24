@@ -24,7 +24,7 @@ def get_chapter4() -> Chapter:
             event_type=EventType.TRAIN,
             choices=[
                 Choice(
-                    text="直视幻境之镜，面对内心的恐惧（WIS检定 DC=16）",
+                    text="直视幻境之镜，面对内心的恐惧（WIS检定 DC=14）",
                     result_text="你凝视着那面诡异的镜子，镜中的自己开始扭曲变形。",
                     check_type="wis", dc=14,
                     success_text="镜中的幻象试图用你最深的恐惧击垮你——失败的耻辱、同伴的死亡、永恒的孤独。但你咬紧牙关，守住了内心的光明。幻境之镜碎裂了，通往神殿的大门向你敞开。",
@@ -37,7 +37,7 @@ def get_chapter4() -> Chapter:
                     flags_set={"faced_fear": True},
                 ),
                 Choice(
-                    text="绕过镜子寻找其他入口（INT检定 DC=14）",
+                    text="绕过镜子寻找其他入口（INT检定 DC=12）",
                     result_text="你不愿面对那面诡异的镜子，试图寻找其他进入神殿的方法。",
                     check_type="int", dc=12,
                     success_text="你发现神殿侧面有一处破损的墙壁——似乎是之前某位挑战者留下的痕迹。虽然绕过了幻境之镜，但你没有获得关于绝夜之神过去的真相。",
@@ -72,7 +72,7 @@ def get_chapter4() -> Chapter:
                     xp_reward=70,
                 ),
                 Choice(
-                    text="利用虚空裂隙传送（INT检定 DC=16）",
+                    text="利用虚空裂隙传送（INT检定 DC=14）",
                     result_text="你研究虚空中的不稳定裂隙，尝试利用它们进行短距离传送。",
                     check_type="int", dc=14,
                     success_text="你成功利用了虚空的规则！通过几次精准的传送跳跃，你绕过了所有的虚空行者，直接抵达了回廊尽头。途中你还偶然瞥见了虚空中被封存的记忆碎片——绝夜之神其实是自愿堕入黑暗，为了封印一个更大的威胁。",
@@ -104,7 +104,7 @@ def get_chapter4() -> Chapter:
             event_type=EventType.STORY,
             choices=[
                 Choice(
-                    text="阅读古卷全文，理解真相（WIS检定 DC=15）",
+                    text="阅读古卷全文，理解真相（WIS检定 DC=13）",
                     result_text="你翻动古卷，试图了解完整的历史。",
                     check_type="wis", dc=13,
                     success_text="你完全理解了真相：绝夜之神用黑暗覆盖大地，是为了阻止「虚无」的扩散。虚无是一种比黑暗更可怕的力量——它会彻底抹去存在。但同时，他也确实在这个过程中迷失了自我，开始相信黑暗是唯一的答案。古卷未页写着：「如果你能让他回忆起黎明……也许，一切还有救。」",
@@ -116,7 +116,7 @@ def get_chapter4() -> Chapter:
                     flags_set={"know_truth": True, "can_liberate": True},
                 ),
                 Choice(
-                    text="直接尝试用三块碎片的力量破坏结界（STR检定 DC=17）",
+                    text="直接尝试用三块碎片的力量破坏结界（STR检定 DC=15）",
                     result_text="你举起三块晨曦碎片，将它们的力量集中释放。",
                     check_type="str", dc=15,
                     success_text="三块碎片的力量共鸣成功击穿了结界！第四块金色的晨曦碎片落入你的手中。但它似乎在对你说些什么——「希望你能理解他的选择。」",

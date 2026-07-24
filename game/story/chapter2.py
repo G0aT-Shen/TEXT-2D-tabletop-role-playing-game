@@ -24,7 +24,7 @@ def get_chapter2() -> Chapter:
             event_type=EventType.TRAIN,
             choices=[
                 Choice(
-                    text="研读车厢上的古老符文（INT检定 DC=13）",
+                    text="研读车厢上的古老符文（INT检定 DC=11）",
                     result_text="你仔细研究车厢上的神秘符文。",
                     check_type="int", dc=11,
                     success_text="你解读出部分符文的内容：它们描述了一场古老的仪式——「绝夜仪式」。某个强大的存在试图用这个仪式将整个世界拖入永恒的黑夜。符文还提到了一件关键物品——「晨曦碎片」，据说是对抗绝夜的唯一希望。",
@@ -36,7 +36,7 @@ def get_chapter2() -> Chapter:
                     flags_set={"understood_ritual": True},
                 ),
                 Choice(
-                    text="探索幽灵列车的其他车厢（DEX检定 DC=12）",
+                    text="探索幽灵列车的其他车厢（DEX检定 DC=10）",
                     result_text="你悄悄穿过连接处，探索这辆神秘的列车。",
                     check_type="dex", dc=10,
                     success_text="你在第三节车厢发现了前一批「被选中者」留下的笔记。笔记记录了他们在森林中的遭遇，以及一张标注了安全路径的地图。地图上标注了一处名为「月光避难所」的地点。",
@@ -48,7 +48,7 @@ def get_chapter2() -> Chapter:
                     item_reward="大治疗药水",
                 ),
                 Choice(
-                    text="在站台上寻找线索（WIS检定 DC=11）",
+                    text="在站台上寻找线索（WIS检定 DC=9）",
                     result_text="你走下幽灵列车，在迷雾笼罩的站台上搜索。",
                     check_type="wis", dc=9,
                     success_text="站台上残留着打斗的痕迹和早已干涸的黑色血迹。你发现了一枚徽章，上面刻着太阳的图案——这是这个世界曾经有光明的证明。徽章上还刻着一行小字：「晨曦不灭」。",
@@ -84,7 +84,7 @@ def get_chapter2() -> Chapter:
                     flags_set={"rescued_survivor": True},
                 ),
                 Choice(
-                    text="去探查诵经声（INT检定 DC=14）",
+                    text="去探查诵经声（INT检定 DC=12）",
                     result_text="你被神秘的诵经声吸引，决定前去一探究竟。",
                     check_type="int", dc=12,
                     success_text="你发现了一群身穿黑袍的邪教徒正在进行献祭仪式。你从他们的祷文中了解到——他们正在为「绝夜之神」收集「光明的碎片」。仪式中心摆放着一块发光的晶石——那就是晨曦碎片之一！",
@@ -116,7 +116,7 @@ def get_chapter2() -> Chapter:
             event_type=EventType.CHOICE,
             choices=[
                 Choice(
-                    text="向老猎人请教森林的秘密（CHA检定 DC=12）",
+                    text="向老猎人请教森林的秘密（CHA检定 DC=10）",
                     result_text="你恭敬地向老猎人请教。",
                     check_type="cha", dc=10,
                     success_text="老猎人被你诚恳的态度打动。他告诉你：「这片森林的中心有一棵腐化树灵——它是黑暗力量在这片土地的代理人。打败它，你就能找到第二块晨曦碎片。」他还送给你一些他自制的狩猎工具。",
@@ -128,7 +128,7 @@ def get_chapter2() -> Chapter:
                     flags_set={"hunter_help": True},
                 ),
                 Choice(
-                    text="在月光祭坛前冥想恢复（WIS检定 DC=10）",
+                    text="在月光祭坛前冥想恢复（WIS检定 DC=8）",
                     result_text="你在银色的月光下闭上眼睛，感受这片圣地的力量。",
                     check_type="wis", dc=8,
                     success_text="月光的力量抚慰了你的身心。HP和MP完全恢复！你还感知到了森林中隐藏的危险——腐化树灵的具体位置已经烙印在你的脑海中。",
@@ -156,7 +156,7 @@ def get_chapter2() -> Chapter:
             event_type=EventType.CHOICE,
             choices=[
                 Choice(
-                    text="🌿 接受森林之灵的试炼（WIS检定 DC=14）",
+                    text="🌿 接受森林之灵的试炼（WIS检定 DC=12）",
                     result_text="你选择尊重这片古老森林的意志，步入试炼之路。",
                     check_type="wis", dc=12,
                     success_text="森林之灵认可了你的敬意。三道试炼你一一通过：\n1. 识别毒果与解药\n2. 解读古树之语\n3. 在迷宫中找到核心\n\n作为回报，森林之灵降下了祝福——你的感知力永久提升了。",
@@ -228,7 +228,7 @@ def get_chapter2() -> Chapter:
                     flags_set={"weakened_boss": True},
                 ),
                 Choice(
-                    text="🔮 用法力远程引爆水晶（INT检定 DC=13）",
+                    text="🔮 用法力远程引爆水晶（INT检定 DC=11）",
                     result_text="你凝聚魔力，远程引爆祭坛上的被污染水晶。",
                     check_type="int", dc=11,
                     success_text="水晶在魔力共振下逐一碎裂！远处的腐化树灵发出痛苦的嚎叫——它的力量被削弱了。",
