@@ -39,6 +39,7 @@ def main():
         "--workpath", str(project_dir / "build"),
         "--specpath", str(project_dir),
         "--add-data", f"{project_dir / 'game'}{os.pathsep}game",
+        "--icon", str(project_dir / "game" / "assets" / "app_icon.ico"),
     ]
     if not args.console:
         command.append("--noconsole")
