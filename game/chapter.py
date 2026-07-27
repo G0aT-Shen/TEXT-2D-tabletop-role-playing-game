@@ -136,3 +136,37 @@ class ChapterManager:
         self.current_chapter_index = data["current_chapter_index"]
         self.current_event_index = data["current_event_index"]
         self.flags = data.get("flags", {})
+
+    def apply_daily_seed(self, seed: Optional[int] = None):
+        """按每日种子打乱显式标记为可互换的事件。
+
+        线性剧情默认保持作者顺序。参与条件分支、设置流程标记或触发
+        Boss 战的事件即使被误标，也不会进入随机组。
+        """
+        import random
+        from datetime import date
+
+        if seed is None:
+            seed = int(date.today().strftime("%Y%m%d"))
+
+        for ch in self.chapters:
+            groups: Dict[str, List[int]] = {}
+            for index, event in enumerate(ch.events):
+                changes_flow = event.required_flags or any(
+                    choice.flags_set for choice in event.choices
+                )
+                if (
+                    event.shuffle_group
+                    and event.event_type != EventType.BOSS
+                    and not changes_flow
+                ):
+                    groups.setdefault(event.shuffle_group, []).append(index)
+
+            for group_name, indices in groups.items():
+                if len(indices) < 2:
+                    continue
+                group_rng = random.Random(f"{seed}:{ch.chapter_id}:{group_name}")
+                shuffled = [ch.events[index] for index in indices]
+                group_rng.shuffle(shuffled)
+                for index, event in zip(indices, shuffled):
+                    ch.events[index] = event

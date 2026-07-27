@@ -39,6 +39,8 @@ class GameState(Enum):
     GAME_WIN = auto()
     PAUSE = auto()
     ENDING = auto()
+    ACHIEVEMENTS = auto()
+    BESTIARY = auto()
 
 
 class Game:
@@ -48,6 +50,8 @@ class Game:
         self.ui = GameUI()
         self.state = GameState.MENU
         self.running = True
+        from .sound import SoundManager
+        self.sound = SoundManager()
 
         # 游戏数据
         self.player: Character = None
@@ -140,6 +144,9 @@ class Game:
         if key == pygame.K_ESCAPE:
             self._handle_escape()
             return
+        if key == pygame.K_m:
+            self.sound.toggle()
+            return
 
         handlers = {
             GameState.MENU: self._handle_menu_input,
@@ -163,6 +170,8 @@ class Game:
             GameState.GAME_OVER: self._handle_game_over_input,
             GameState.GAME_WIN: self._handle_game_win_input,
             GameState.ENDING: self._handle_ending_input,
+            GameState.ACHIEVEMENTS: self._handle_achievements_input,
+            GameState.BESTIARY: self._handle_bestiary_input,
         }
         handler = handlers.get(self.state)
         if handler:
@@ -207,9 +216,12 @@ class Game:
     def _handle_menu_input(self, key):
         if key == pygame.K_UP:
             self.menu_selected = (self.menu_selected - 1) % len(self.menu_options)
+            self.sound.play("select")
         elif key == pygame.K_DOWN:
             self.menu_selected = (self.menu_selected + 1) % len(self.menu_options)
+            self.sound.play("select")
         elif key == pygame.K_RETURN:
+            self.sound.play("confirm")
             option = self.menu_options[self.menu_selected]
             if option == "新游戏":
                 self.multiplayer = False
@@ -295,6 +307,8 @@ class Game:
             diff_key = ["easy", "normal", "hard"][self.selected_difficulty]
             from .combat import set_difficulty
             set_difficulty(diff_key)
+            # 每日种子仅作用于显式标记为可互换的安全事件组。
+            self.chapter_manager.apply_daily_seed()
             self._start_chapter_intro()
 
     def _handle_play_input(self, key):
@@ -338,6 +352,7 @@ class Game:
             elif key == pygame.K_RETURN:
                 if self.combat_selected_action == 0:  # 攻击
                     self.combat.player_action(player_idx, CombatAction.ATTACK)
+                    self._play_combat_sounds()
                     self._after_combat_action()
                 elif self.combat_selected_action == 1:  # 技能
                     self.combat_action_phase = "skill"
@@ -354,6 +369,7 @@ class Game:
                 elif self.combat_selected_action == 4:  # 逃跑
                     luck_result, _ = Dice.luck_check(current_p.luck)
                     if luck_result.value in ("critical_success", "success"):
+                        current_p._escape_count += 1
                         self.combat.escaped = True
                         self.combat.combat_over = True
                         self.combat.log.append(f"🏃 [{current_p.name}] 成功逃离了战斗！")
@@ -377,6 +393,7 @@ class Game:
             elif key == pygame.K_RETURN:
                 real_idx = unlocked_indices[self.combat_selected_skill]
                 self.combat.player_action(player_idx, CombatAction.SKILL, real_idx)
+                self._play_combat_sounds()
                 self.combat_action_phase = "action"
                 self._after_combat_action()
 
@@ -389,12 +406,28 @@ class Game:
             elif key == pygame.K_RETURN:
                 item = current_p.use_item(self.combat_selected_skill)
                 if item:
+                    current_p._items_used += 1
                     from .items import use_item
                     result_text = use_item(item, current_p, self.combat.log, self.combat.enemy)
                     self.combat.log.append(result_text)
                 self.combat.player_action(player_idx, CombatAction.ITEM)
                 self.combat_action_phase = "action"
                 self._after_combat_action()
+
+    def _play_combat_sounds(self):
+        """根据最新战斗日志播放音效。"""
+        if not self.combat or not self.combat.log:
+            return
+        for line in self.combat.log[-5:]:
+            if "暴击" in line:
+                self.sound.play("crit")
+                return
+            if "造成" in line and "点伤害" in line:
+                self.sound.play("hit")
+                return
+            if "回复" in line:
+                self.sound.play("heal")
+                return
 
     def _after_combat_action(self):
         """战斗行动后：触发视觉特效并检查是否结束。"""
@@ -459,12 +492,18 @@ class Game:
     def _handle_combat_result_input(self, key):
         if key == pygame.K_RETURN:
             if self.combat_result:  # 胜利
+                self.sound.play("victory")
                 rewards = self.combat.get_rewards()
                 xp = rewards["xp"]
                 gold = rewards.get("gold", 0)
                 for p in self._all_players():
                     p.add_xp(xp)
                     p.gold += gold
+                    # 怪物图鉴
+                    if self.combat and self.combat.enemy:
+                        enemy_id = getattr(self.combat.enemy, 'template_id', '')
+                        if enemy_id:
+                            p._bestiary.add(enemy_id)
                 names = ", ".join(p.name for p in self._all_players())
                 self.event_log.append(f"⭐ 战斗胜利！{names} 获得 {xp} 经验值")
                 if gold > 0:
@@ -485,9 +524,30 @@ class Game:
                         for p in self._all_players():
                             p.shadow_essence += se
                         self.event_log.append(f"💎 获得 {se} 暗影精华")
+                # 金币追踪和成就检查
+                for p in self._all_players():
+                    p._total_gold_earned += gold
+                    # Boss击败计数
+                    if rewards.get("loot") == "boss":
+                        p._boss_kill_count += 1
+                    # 成就检查
+                    self._check_and_notify_achievements(p, "on_combat_win", {
+                        "damage_taken": p.stats.max_hp - p.hp,
+                        "hp_percent": int(p.hp / max(1, p.stats.max_hp) * 100),
+                        "items_used": p._items_used,
+                    })
+                    if rewards.get("loot") == "boss":
+                        self._check_and_notify_achievements(p, "on_boss_kill", {
+                            "boss_name": self.combat.enemy.name,
+                            "boss_count": p._boss_kill_count,
+                        })
+                    self._check_and_notify_achievements(p, "on_gold_collected", {
+                        "total_gold": p._total_gold_earned,
+                    })
                 # 检查是否有列车事件，如果有则打开商店
                 self._advance_event()
             elif self.combat_result is False:  # 失败
+                self.sound.play("defeat")
                 self.state = GameState.GAME_OVER
             else:  # 逃跑
                 self._advance_event()
@@ -530,17 +590,21 @@ class Game:
                 self.save_message = "❌ 该槽位无存档"
 
     def _handle_character_sheet_input(self, key):
-        # 角色详情页中按 T 进入技能树
         if key == pygame.K_t:
             self.state = GameState.SKILL_TREE
             self.skill_tree_selected = 0
             self.skill_tree_message = ""
             return
-        # 角色详情页中按 A 进入属性分配
         if key == pygame.K_a:
             self.state = GameState.SKILL_TREE
             self.skill_tree_selected = 0
             self.skill_tree_message = ""
+            return
+        if key == pygame.K_v:
+            self.state = GameState.ACHIEVEMENTS
+            return
+        if key == pygame.K_b:
+            self.state = GameState.BESTIARY
             return
         if key:
             self.state = GameState.PLAY
@@ -659,6 +723,14 @@ class Game:
         elif key == pygame.K_RETURN:
             self.state = GameState.GAME_WIN
 
+    def _handle_achievements_input(self, key):
+        """成就查看：任意键返回。"""
+        self.state = GameState.CHARACTER_SHEET
+
+    def _handle_bestiary_input(self, key):
+        """图鉴查看：任意键返回。"""
+        self.state = GameState.CHARACTER_SHEET
+
     # ═══════════════════════════════════════════
     # 游戏逻辑
     # ═══════════════════════════════════════════
@@ -718,6 +790,9 @@ class Game:
                 return
 
         choice_index = self.selected_choice
+        choice = event_obj.choices[choice_index]
+        if choice.check_type:
+            self.sound.play("dice")
         result = self.event_manager.execute_choice(event_obj, choice_index)
         self.event_result_data = result
         self.event_log = self.event_manager.get_event_log()
@@ -794,6 +869,7 @@ class Game:
         self.shop_items = items
         self.shop_selected = 0
         self.shop_message = ""
+        self.sound.play("shop")
         self.state = GameState.SHOP
 
     def _award_chapter_completion(self, completed_chapter_id: int):
@@ -802,6 +878,9 @@ class Game:
         for p in self._all_players():
             p.dawn_shards += 1
         self.event_log.append(f"✨ 获得晨曦碎片！(共{self.player.dawn_shards}块)")
+        # 重置 DAWN 免死标记（每章1次）
+        for p in self._all_players():
+            p.dawn_death_save_used = False
         # 阵营声望：根据章节给予额外声望
         if completed_chapter_id == 1:
             faction_bonus = {"DAWN": 20}
@@ -820,10 +899,18 @@ class Game:
             except KeyError:
                 fac_name = fac
             self.event_log.append(f"🏛 {fac_name} 声望 +{amt}")
-        # 全队回复
+        # 全队回复 + 成就检查
         for p in self._all_players():
             p.hp = p.stats.max_hp
             p.mp = p.stats.max_mp
+            # 章节完成成就
+            self._check_and_notify_achievements(p, "on_chapter_complete", {
+                "chapter": completed_chapter_id,
+            })
+            # 阵营崇拜成就
+            for fac in ["SHADOW", "DAWN", "OBSERVER"]:
+                if p.has_faction_passive(fac):
+                    self._check_and_notify_achievements(p, "on_faction_max", {})
 
     def _start_combat(self, enemy_id: str):
         enemy = create_enemy(enemy_id)
@@ -839,11 +926,23 @@ class Game:
         self.combat_selected_skill = 0
         self.combat_result = None
         self.state = GameState.COMBAT
+        if enemy.is_boss:
+            self.sound.play("boss")
 
     def _check_combat_end(self):
         if self.combat.combat_over:
             self.combat_result = self.combat.player_won
             self.state = GameState.COMBAT_RESULT
+
+    def _check_and_notify_achievements(self, player, trigger: str, data: dict = None):
+        """检查成就并在UI通知。"""
+        from .achievements import check_achievements, ACHIEVEMENT_MAP
+        new = check_achievements(player, trigger, data or {})
+        for aid in new:
+            ach = ACHIEVEMENT_MAP.get(aid)
+            if ach:
+                self.event_log.append(f"🏆 成就解锁: {ach.icon} {ach.name} — {ach.description}")
+                self.sound.play("achievement")
 
     def _return_to_menu(self):
         self.state = GameState.MENU
@@ -970,6 +1069,12 @@ class Game:
 
         elif self.state == GameState.DIFFICULTY_SELECT:
             self.ui.draw_difficulty_select(self.difficulty_options, self.selected_difficulty)
+
+        elif self.state == GameState.ACHIEVEMENTS:
+            self.ui.draw_achievements_screen(self.player)
+
+        elif self.state == GameState.BESTIARY:
+            self.ui.draw_bestiary_screen(self.player)
 
         elif self.state == GameState.SHOP:
             self.ui.draw_shop_screen(self.player, self.player2, self.shop_items,

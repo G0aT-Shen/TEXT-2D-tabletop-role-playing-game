@@ -658,10 +658,15 @@ class GameUI:
         """绘制标题画面（星空背景增强版）。"""
         self._begin_frame()
 
-        # 场景背景
-        self.scene.set_scene("train")
-        self.scene.render(self.screen, 0, 0, WIDTH, HEIGHT)
-        
+        # AI 标题背景图（优先）或场景渲染
+        title_img = self.scene.get_title_image()
+        if title_img:
+            scaled = pygame.transform.scale(title_img, (WIDTH, HEIGHT))
+            self.screen.blit(scaled, (0, 0))
+        else:
+            self.scene.set_scene("train")
+            self.scene.render(self.screen, 0, 0, WIDTH, HEIGHT)
+
         # 暗色叠加
         overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
         overlay.fill((3, 2, 8, 180))
@@ -1033,6 +1038,16 @@ class GameUI:
                 check_info = ""
                 if choice.check_type:
                     check_info = f"  [{choice.check_type.upper()} DC={choice.dc}]"
+                    # OBSERVER 阵营被动：显示成功概率
+                    if hasattr(player, 'has_faction_passive') and player.has_faction_passive("OBSERVER"):
+                        from .dice import Dice
+                        mod_map = {"str": player.str_mod, "dex": player.dex_mod,
+                                   "int": player.int_mod, "wis": player.wis_mod,
+                                   "cha": player.cha_mod, "luck": player.stats.luck // 2}
+                        modifier = mod_map.get(choice.check_type, 0)
+                        needed = choice.dc - modifier
+                        success_rate = max(5, min(95, int((21 - needed) / 20 * 100)))
+                        check_info += f" 成功率:{success_rate}%"
                 if choice.trigger_combat:
                     enemy = choice.combat_enemy or "???"
                     check_info = f"  [⚔ 战斗: {enemy}]"
@@ -1058,8 +1073,22 @@ class GameUI:
         sw = PANEL_WIDTH - 20
         self._draw_panel(SIDEBAR_X, 0, PANEL_WIDTH, HEIGHT)
 
+        # 角色立绘（如有 AI 生成的）
+        portrait = self.scene.get_portrait(player.char_class.name)
+        if portrait:
+            # 缩放立绘到侧边栏宽度
+            pw = sw + 10
+            ph = int(pw * portrait.get_height() / max(1, portrait.get_width()))
+            ph = min(ph, 120)  # 限制高度
+            pw = int(ph * portrait.get_width() / max(1, portrait.get_height()))
+            scaled = pygame.transform.scale(portrait, (pw, ph))
+            px = sx - 7 + (sw + 10 - pw) // 2
+            self.screen.blit(scaled, (px, sy))
+            avatar_y = sy + ph + 5
+        else:
+            avatar_y = sy
+
         # 角色头像区域
-        avatar_y = sy
         self._draw_text(f"🎭 {player.name}", sx - 7, avatar_y,
                        COLORS["gold_bright"], self.font,
                        max_width=sw + 5, center=True)
@@ -1542,7 +1571,7 @@ class GameUI:
         else:
             self._draw_character_panel(player, 30)
 
-        self._draw_text("按 T 技能树 | 按 A 属性分配 | 其他键返回", 0, HEIGHT - 40,
+        self._draw_text("按 T 技能树 | A 属性 | V 成就 | B 图鉴 | 其他键返回", 0, HEIGHT - 40,
                        COLORS["text_dim"], self.font_small,
                        max_width=WIDTH, center=True)
 
@@ -2088,6 +2117,108 @@ class GameUI:
         """更新画面。"""
         pygame.display.flip()
         self.clock.tick(60)  # 提升到60fps
+
+    # ═══════════════════════════════════════════
+    # 成就查看
+    # ═══════════════════════════════════════════
+
+    def draw_achievements_screen(self, player):
+        """绘制成就查看界面。"""
+        self._begin_frame()
+        self.screen.fill(COLORS["bg"])
+
+        from .achievements import ACHIEVEMENTS, get_achievement_progress
+        unlocked = getattr(player, 'unlocked_achievements', set())
+        progress = get_achievement_progress(player)
+
+        # 标题
+        self._draw_text(f"🏆 成就 ({progress['done']}/{progress['total']}) — "
+                       f"进度 {progress['percent']}%",
+                       0, 20, COLORS["gold_bright"], self.font_title,
+                       max_width=WIDTH, center=True)
+
+        # 进度条
+        bar_w = WIDTH - 200
+        bar_x = 100
+        self._draw_bar(bar_x, 58, bar_w, 8,
+                      progress['done'], progress['total'], COLORS["gold"])
+
+        y = 85
+        cols = 2
+        col_w = WIDTH // cols - 40
+
+        for i, ach in enumerate(ACHIEVEMENTS):
+            col = i % 2
+            row = i // 2
+            ax = 25 + col * (col_w + 30)
+            ay = y + row * 40
+
+            is_unlocked = ach.id in unlocked
+            color = COLORS["gold"] if is_unlocked else COLORS["text_dim"]
+            icon = ach.icon if is_unlocked else "🔒"
+            desc = ach.description if is_unlocked or not ach.hidden else "???"
+
+            self._draw_text(f"{icon} {ach.name}", ax, ay,
+                           color, self.font_small)
+            self._draw_text(f"  {desc}", ax, ay + 18,
+                           COLORS["text_dim"] if is_unlocked else COLORS["text_dim"],
+                           self.font_small, max_width=col_w - 10)
+
+        self._draw_text("按任意键返回角色面板", 0, HEIGHT - 30,
+                       COLORS["text_dim"], self.font_small,
+                       max_width=WIDTH, center=True)
+
+    # ═══════════════════════════════════════════
+    # 怪物图鉴
+    # ═══════════════════════════════════════════
+
+    def draw_bestiary_screen(self, player):
+        """绘制怪物图鉴界面。"""
+        self._begin_frame()
+        self.screen.fill(COLORS["bg"])
+
+        from .combat import ENEMY_TEMPLATES
+        defeated = getattr(player, '_bestiary', set())
+        total = len(ENEMY_TEMPLATES)
+
+        self._draw_text(f"📖 怪物图鉴 ({len(defeated)}/{total})",
+                       0, 20, COLORS["gold_bright"], self.font_title,
+                       max_width=WIDTH, center=True)
+
+        y = 70
+        cols = 3
+        col_w = WIDTH // cols - 30
+        for i, enemy_id in enumerate(sorted(ENEMY_TEMPLATES.keys())):
+            enemy = ENEMY_TEMPLATES[enemy_id]
+            col = i % 3
+            row = i // 3
+            ax = 20 + col * (col_w + 20)
+            ay = y + row * 52
+
+            known = enemy_id in defeated
+            icon = {"shadow_wolf": "🐺", "dark_spirit": "👻",
+                    "demon_imp": "👹", "necromancer": "💀",
+                    "night_reaver": "⚔️", "corrupted_knight": "🛡️",
+                    "void_walker": "🌌", "shadow_dragon": "🐉",
+                    "forest_lord": "🌳", "abyssal_lord": "👑",
+                    "night_god": "🌑"}.get(enemy_id, "❓")
+
+            name = enemy.get("name", enemy_id) if known else "???"
+            color = COLORS["gold"] if known else COLORS["text_dim"]
+            boss_tag = " [Boss]" if enemy.get("is_boss") else ""
+
+            self._draw_text(f"{icon} {name}{boss_tag}", ax, ay,
+                           color, self.font_small)
+            if known:
+                self._draw_text(f"  HP:{enemy.get('hp', '?')} "
+                               f"ATK:{enemy.get('attack', '?')} "
+                               f"DEF:{enemy.get('defense', '?')}",
+                               ax, ay + 18,
+                               COLORS["text_dim"], self.font_small)
+
+        self._draw_text("按任意键返回角色面板", 0, HEIGHT - 30,
+                       COLORS["text_dim"], self.font_small,
+                       max_width=WIDTH, center=True)
 
     def tick(self, fps: int = 60):
         self.clock.tick(fps)

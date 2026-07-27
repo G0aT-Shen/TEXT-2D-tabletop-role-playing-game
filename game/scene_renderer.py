@@ -1,10 +1,43 @@
-"""程序化场景渲染 — 为绝夜之旅生成暗黑风格插图，不再纯文字。"""
+"""程序化场景渲染 — 为绝夜之旅生成暗黑风格插图，不再纯文字。
+有 AI 生成图片时优先使用，无图时回退到程序化绘制。"""
 
 import math
 import random
+import os
 import pygame
 from typing import Tuple, List, Optional
 from dataclasses import dataclass, field
+
+
+# ── AI 生成图片路径 ──
+ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
+
+# 场景名 → 图片文件名映射
+SCENE_IMAGES = {
+    "train": "scene_train.png",
+    "dark_forest": "scene_forest.png",
+    "corrupted_castle": "scene_castle.png",
+    "crystal_cavern": "scene_abyss.png",
+    "final_chamber": "scene_temple.png",
+    "temple_ruins": "scene_ruins.png",
+}
+
+# Boss名关键词 → 图片文件名映射
+BOSS_IMAGES = {
+    "龙": "boss_shadow_dragon.png",
+    "神": "boss_night_god.png",
+    "树": "boss_forest_lord.png",
+    "领主": "boss_abyssal_lord.png",
+}
+
+# 角色立绘
+PORTRAIT_IMAGES = {
+    "WARRIOR": "portrait_warrior.png",
+    "ASSASSIN": "portrait_assassin.png",
+    "KNIGHT": "portrait_knight.png",
+    "PRIEST": "portrait_priest.png",
+    "MAGE": "portrait_mage.png",
+}
 
 
 # ══════════════════════════════════════════════════
@@ -107,7 +140,7 @@ CHAPTER_SCENES = {
 # ══════════════════════════════════════════════════
 
 class SceneRenderer:
-    """程序化场景生成器——纯pygame绘图，零外部资源。"""
+    """场景生成器——优先使用 AI 图片，回退到程序化绘制。"""
 
     def __init__(self, screen_w: int, screen_h: int):
         self.w = screen_w
@@ -116,11 +149,55 @@ class SceneRenderer:
         self._scene_cache: dict = {}  # (scene_name, tick_frame) → surface
         self._tick = 0
         self._random_seed = random.randint(0, 10000)
+        self._image_cache: dict = {}  # file_path → pygame.Surface
+
+    # ── 图片加载 ──
+
+    def _load_image(self, filename: str) -> Optional[pygame.Surface]:
+        """加载图片，带缓存。"""
+        if filename in self._image_cache:
+            return self._image_cache[filename]
+        path = os.path.join(ASSETS_DIR, filename)
+        if os.path.exists(path):
+            try:
+                img = pygame.image.load(path)
+                img = img.convert_alpha()
+                self._image_cache[filename] = img
+                return img
+            except Exception:
+                return None
+        return None
+
+    def _get_scene_image(self, scene_name: str) -> Optional[pygame.Surface]:
+        """获取场景对应的 AI 图片。"""
+        filename = SCENE_IMAGES.get(scene_name, "")
+        if filename:
+            return self._load_image(filename)
+        return None
+
+    def _get_boss_image(self, enemy_name: str) -> Optional[pygame.Surface]:
+        """根据 Boss 名获取 AI 图片。"""
+        for keyword, filename in BOSS_IMAGES.items():
+            if keyword in enemy_name:
+                return self._load_image(filename)
+        return None
+
+    def get_portrait(self, char_class_name: str) -> Optional[pygame.Surface]:
+        """获取职业立绘。"""
+        filename = PORTRAIT_IMAGES.get(char_class_name, "")
+        if filename:
+            return self._load_image(filename)
+        return None
+
+    def get_title_image(self) -> Optional[pygame.Surface]:
+        """获取标题画面背景。"""
+        return self._load_image("title_bg.png")
 
     # ── 场景切换 ──
 
     def set_scene(self, scene_name: str):
         """切换到指定场景。"""
+        self._current_scene_key = scene_name
         self.current_scene = SCENE_PRESETS.get(scene_name, SCENE_PRESETS["dark_forest"])
         self._random_seed = random.randint(0, 10000)
 
@@ -132,11 +209,34 @@ class SceneRenderer:
     # ── 主渲染入口 ──
 
     def render(self, screen: pygame.Surface, x: int, y: int, w: int, h: int):
-        """渲染场景到指定矩形区域。"""
+        """渲染场景到指定矩形区域（有 AI 图时优先使用）。"""
         self._tick += 1
         if self.current_scene is None:
             self.set_scene("dark_forest")
 
+        cfg = self.current_scene
+
+        # 优先使用 AI 生成图片
+        scene_img = self._get_scene_image(cfg.name if hasattr(cfg, 'name') else "")
+        # 用 scene_name 查找（cfg.name 是中文显示名，需要用 set_scene 时的 key）
+        # 实际上我们需要存储 scene_name key
+        scene_img = self._get_scene_image(getattr(self, '_current_scene_key', ''))
+
+        if scene_img:
+            # 缩放图片到目标区域
+            scaled = pygame.transform.scale(scene_img, (w, h))
+            screen.blit(scaled, (x, y))
+            # 叠加薄雾保持氛围
+            t = pygame.time.get_ticks() / 1000.0
+            rng = random.Random(self._random_seed + 4)
+            self._draw_mist(screen, x, y, w, h, cfg, t, rng)
+            return
+
+        # 回退到程序化渲染
+        self._render_procedural(screen, x, y, w, h)
+
+    def _render_procedural(self, screen: pygame.Surface, x: int, y: int, w: int, h: int):
+        """程序化渲染场景。"""
         cfg = self.current_scene
         t = pygame.time.get_ticks() / 1000.0
         rng = random.Random(self._random_seed)
@@ -518,9 +618,29 @@ class SceneRenderer:
 
     def render_combat_background(self, screen: pygame.Surface, x: int, y: int, w: int, h: int,
                                  is_boss: bool = False, enemy_name: str = ""):
-        """渲染战斗背景——更激烈的色调。"""
+        """渲染战斗背景——有 Boss AI 图时优先使用。"""
         t = pygame.time.get_ticks() / 1000.0
         rng = random.Random(self._random_seed)
+
+        # Boss 战：优先使用 AI 图片
+        if is_boss:
+            boss_img = self._get_boss_image(enemy_name)
+            if boss_img:
+                # 缩放到战斗区域
+                scaled = pygame.transform.scale(boss_img, (w, h))
+                screen.blit(scaled, (x, y))
+                # 叠加暗角和粒子保持氛围
+                overlay = pygame.Surface((w, h), pygame.SRCALPHA)
+                overlay.fill((0, 0, 0, 60))
+                screen.blit(overlay, (x, y))
+                cfg_aura = SceneConfig(
+                    name="combat", sky_colors=[(4, 2, 10)], ground_color=(8, 4, 14),
+                    accent_color=(255, 40, 40), mist_color=(25, 15, 35),
+                    particles_type="embers",
+                )
+                self._draw_boss_aura(screen, x, y, w, h, (255, 40, 40), t)
+                self._draw_particles(screen, x, y, w, h, cfg_aura, t, rng)
+                return
 
         if is_boss:
             sky = [(4, 2, 10), (15, 5, 22), (30, 10, 35)]

@@ -70,6 +70,7 @@ class Enemy:
     skills: List[Dict] = field(default_factory=list)
     status_effects: List[Dict] = field(default_factory=list)
     is_boss: bool = False
+    template_id: str = ""  # 模板ID，用于图鉴追踪
 
     @property
     def is_alive(self) -> bool:
@@ -206,6 +207,7 @@ def create_enemy(template_id: str) -> Optional[Enemy]:
         gold_reward=scaled.get("gold_reward", 10),
         skills=scaled.get("skills", []),
         is_boss=scaled.get("is_boss", False),
+        template_id=template_id,
     )
 
 
@@ -479,6 +481,14 @@ class CombatEngine:
                 log.append(f"🛡️ [{target.name}] 防御姿态减免了一半伤害！")
             dmg = max(1, dmg)
             target.hp -= dmg
+
+            # DAWN 阵营被动：致命伤保留1HP（每章1次）
+            if target.hp <= 0 and hasattr(target, 'has_faction_passive') and target.has_faction_passive("DAWN"):
+                if not getattr(target, 'dawn_death_save_used', True):
+                    target.dawn_death_save_used = True
+                    target.hp = 1
+                    log.append(f"☀️ [{target.name}] 晨曦加护发动！致命伤保留1HP！")
+
             crit_text = " 💥暴击！" if is_crit else ""
             target_mark = " → " + target.name if self.is_multiplayer else ""
             log.append(f"💔 [{target.name}] 受到 {dmg} 点伤害{crit_text}{target_mark}")
@@ -491,6 +501,12 @@ class CombatEngine:
             p.tick_cooldowns()
             p.tick_effects()
             p.defending = False
+            # DAWN 免死也检查持续伤害（中毒等）
+            if p.hp <= 0 and hasattr(p, 'has_faction_passive') and p.has_faction_passive("DAWN"):
+                if not getattr(p, 'dawn_death_save_used', True):
+                    p.dawn_death_save_used = True
+                    p.hp = 1
+                    log.append(f"☀️ [{p.name}] 晨曦加护抵挡了致命的中毒伤害！")
         self.enemy.tick_effects()
         self.turn += 1
 

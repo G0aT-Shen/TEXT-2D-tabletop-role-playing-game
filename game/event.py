@@ -59,6 +59,8 @@ class Event:
     # 标记
     required_flags: Dict[str, Any] = field(default_factory=dict)  # 触发条件
     auto_next: Optional[str] = None    # 自动跳转
+    # 只有叙事上可互换的事件才应使用同一个分组名。
+    shuffle_group: Optional[str] = None
 
 
 class EventManager:

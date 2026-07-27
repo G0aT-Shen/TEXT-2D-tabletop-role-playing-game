@@ -158,10 +158,21 @@ class Character:
         # ── Phase 3: 阵营声望 ──
         self.faction_reputation: Dict[str, int] = {"SHADOW": 0, "DAWN": 0, "OBSERVER": 0}
         self.dawn_shards: int = 0        # 晨曦碎片（章节奖励）
+        self.dawn_death_save_used: bool = False  # 本章是否已使用免死
 
         # ── Phase 3: New Game+ ──
         self.is_ng_plus: bool = False    # 是否为二周目
         self.ng_plus_level: int = 0      # 第几周目
+
+        # ── Phase 4: 成就 ──
+        self.unlocked_achievements: set = set()  # 已解锁成就ID集合
+        # 成就追踪计数器
+        self._escape_count: int = 0      # 逃跑次数
+        self._items_used: int = 0        # 战斗中使用道具次数
+        self._boss_kill_count: int = 0   # Boss击败数
+        self._total_gold_earned: int = 0 # 累计获得金币
+        self._advanced_skills: int = 0   # 已解锁进阶技能数
+        self._bestiary: set = set()      # 已击败敌人记录
 
     # --- 便捷属性访问 ---
     @property
@@ -433,6 +444,9 @@ class Character:
 
         self.skill_points -= cost
         skill.is_locked = False
+        # 追踪进阶技能解锁数
+        if skill.parent_id or skill.branch_name:
+            self._advanced_skills += 1
         return True
 
     def get_available_branches(self) -> List[int]:
@@ -557,8 +571,16 @@ class Character:
             "shadow_essence": self.shadow_essence,
             "faction_reputation": self.faction_reputation,
             "dawn_shards": self.dawn_shards,
+            "dawn_death_save_used": self.dawn_death_save_used,
             "is_ng_plus": self.is_ng_plus,
             "ng_plus_level": self.ng_plus_level,
+            "unlocked_achievements": list(self.unlocked_achievements),
+            "_escape_count": self._escape_count,
+            "_items_used": self._items_used,
+            "_boss_kill_count": self._boss_kill_count,
+            "_total_gold_earned": self._total_gold_earned,
+            "_advanced_skills": self._advanced_skills,
+            "_bestiary": list(self._bestiary),
             "items": self.items,
             "equipment": eq_data,
         }
@@ -595,8 +617,17 @@ class Character:
         # 恢复 Phase 3 新字段
         char.faction_reputation = data.get("faction_reputation", {"SHADOW": 0, "DAWN": 0, "OBSERVER": 0})
         char.dawn_shards = data.get("dawn_shards", 0)
+        char.dawn_death_save_used = data.get("dawn_death_save_used", False)
         char.is_ng_plus = data.get("is_ng_plus", False)
         char.ng_plus_level = data.get("ng_plus_level", 0)
+        # 恢复 Phase 4 成就
+        char.unlocked_achievements = set(data.get("unlocked_achievements", []))
+        char._escape_count = data.get("_escape_count", 0)
+        char._items_used = data.get("_items_used", 0)
+        char._boss_kill_count = data.get("_boss_kill_count", 0)
+        char._total_gold_earned = data.get("_total_gold_earned", 0)
+        char._advanced_skills = data.get("_advanced_skills", 0)
+        char._bestiary = set(data.get("_bestiary", []))
         # 恢复装备
         eq_data = data.get("equipment", {})
         if eq_data:
