@@ -86,7 +86,74 @@ def get_chapter4() -> Chapter:
             ],
         ),
 
-        # ===== 事件2: 黎明之殿 =====
+        # ===== 事件1b: 关键抉择 — 谨慎探索 vs 急速突破 =====
+        Event(
+            event_id="c4_crossroad",
+            title="⚡ 最终抉择",
+            description=(
+                "虚空回廊的尽头出现了两条通路。\n\n"
+                "左边是通往「黎明之殿」的正门——门扉上雕刻着太阳的图案，\n"
+                "似乎保留着绝夜之神曾经的记忆。进入这里，你或许能了解一切的真相。\n\n"
+                "右边是一条直接通往王座的捷径——绝夜之神就在那里等着你。\n"
+                "走这条路意味着放弃探寻真相，但也意味着更少的时间让黑暗侵蚀你。\n\n"
+                "「了解你的敌人……还是直接消灭他？」\n"
+                "这是最后一个十字路口了。"
+            ),
+            event_type=EventType.CHOICE,
+            choices=[
+                Choice(
+                    text="🏛 进入黎明之殿，探寻真相（通往黎明之殿事件）",
+                    result_text="你推开雕刻着太阳的门扉。一股温暖的气息迎面而来——这是在绝夜之境中从未有过的感受。真相，就在这里。",
+                    xp_reward=30,
+                    faction_reputation={"OBSERVER": 30, "DAWN": 20},
+                    flags_set={"chose_truth_path": True},
+                ),
+                Choice(
+                    text="⚔️ 走捷径直捣王座，终结一切（跳过黎明之殿，直接挑战Boss）",
+                    result_text="你选择最直接的方式。蜿蜒的通道直通绝夜之神的王座——你不需要真相，你只需要胜利。",
+                    xp_reward=15,
+                    faction_reputation={"SHADOW": 30},
+                    flags_set={"chose_direct_path": True, "boss_rushed": True},
+                ),
+            ],
+        ),
+
+        # ===== 事件1c: 分支 — 急速线（跳过黎明之殿，直接打Boss） =====
+        Event(
+            event_id="c4_rush_path",
+            title="🛡 最后的准备",
+            description=(
+                "通道尽头，绝夜之神的王座已经触手可及。\n\n"
+                "四周的黑暗如活物般蠕动，试图渗入你的意识。\n"
+                "你没有时间去探寻历史——现在唯一重要的是眼前的战斗。\n\n"
+                "但在你踏上最后的阶梯之前，你注意到通道两侧有几处暗影结晶——\n"
+                "它们是黑暗能量的核心源。如果摧毁它们，或许能削弱绝夜之神。"
+            ),
+            event_type=EventType.CHOICE,
+            required_flags={"chose_direct_path": True},
+            choices=[
+                Choice(
+                    text="💪 摧毁暗影结晶削弱Boss（STR检定 DC=14）",
+                    result_text="你挥起武器砸向那些黑暗结晶！",
+                    check_type="str", dc=14,
+                    success_text="结晶在你猛烈攻击下逐一碎裂！黑暗能量的流动明显减弱了——绝夜之神的力量来源被削弱了。",
+                    failure_text="攻击不够猛烈，只毁掉了部分结晶。",
+                    critical_success_text="你以雷霆万钧之势粉碎了所有结晶！黑暗能量大量流失，绝夜之神的王座都为之震颤。Boss力量大幅削弱！",
+                    critical_failure_text="结晶爆炸了！黑色的碎片刺入你的身体。HP -12。",
+                    hp_change=-12,
+                    xp_reward=35,
+                    flags_set={"boss_weakened": True},
+                ),
+                Choice(
+                    text="⚔️ 不做停留，直接迎战绝夜之神！",
+                    result_text="你握紧四块晨曦碎片，大步走向王座。这一战，没有退路，也不需要退路。",
+                    xp_reward=20,
+                    gold_reward=50,
+                ),
+            ],
+        ),
+
+        # ===== 事件2: 黎明之殿（仅选择探寻真相时触发） =====
         Event(
             event_id="c4_dawn",
             title="☀️ 被遗忘的黎明",
@@ -102,6 +169,7 @@ def get_chapter4() -> Chapter:
                 "他不是堕落了，而是牺牲了。」"
             ),
             event_type=EventType.STORY,
+            required_flags={"chose_truth_path": True},
             choices=[
                 Choice(
                     text="阅读古卷全文，理解真相（WIS检定 DC=13）",

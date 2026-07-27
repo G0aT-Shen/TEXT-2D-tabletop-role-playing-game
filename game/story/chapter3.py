@@ -122,7 +122,109 @@ def get_chapter3() -> Chapter:
             ],
         ),
 
-        # ===== 事件3: 深渊领主（第三章Boss） =====
+        # ===== 事件3: 关键抉择 — 正面决战 vs 削弱力量 =====
+        Event(
+            event_id="c3_crossroad",
+            title="⚡ 最后的选择",
+            description=(
+                "深渊领主的力量在你面前脉动。\n\n"
+                "通过祭坛的残存符文，你读出了一个关键信息：\n"
+                "深渊领主的力量来源于要塞深处的一口「黑暗之井」。\n"
+                "如果摧毁那口井，他的力量将大幅削弱。\n\n"
+                "但摧毁黑暗之井的路上布满了虚空裂隙和深渊守卫——\n"
+                "这可能比直接对抗深渊领主更加危险。\n\n"
+                "「时间不多了……选择吧。」"
+            ),
+            event_type=EventType.CHOICE,
+            choices=[
+                Choice(
+                    text="🗡 直接挑战深渊领主（战斗，但敌人更强）",
+                    result_text="你选择以最纯粹的方式——用力量证明自己。深渊领主感受到了你的战意，发出低沉的笑声。",
+                    xp_reward=30,
+                    faction_reputation={"SHADOW": 20},
+                    flags_set={"chose_direct_fight": True},
+                ),
+                Choice(
+                    text="🕳 潜入深处摧毁黑暗之井（INT检定 DC=15）",
+                    result_text="你决定先削弱敌人的力量再发动攻击。你转身向要塞更深处走去——那里的黑暗比任何地方都浓重。",
+                    check_type="int", dc=15,
+                    success_text="你成功找到了黑暗之井并切断了它与深渊领主的连接。一股黑暗能量从井口喷涌而出——深渊领主发出了痛苦的咆哮。他的力量被削弱了！",
+                    failure_text="你在错综复杂的地下通道中迷失了方向，浪费了宝贵的时间。深渊领主已经完全恢复了力量。",
+                    critical_success_text="你不仅摧毁了黑暗之井，还利用井中的黑暗能量临时强化了自己的武器！你的下一次攻击将造成双倍伤害。深渊领主的力量严重受损。",
+                    critical_failure_text="黑暗之井的能量反噬了你！HP -15，并且黑暗能量侵蚀了你的意识，你在接下来的战斗中所有检定-2。",
+                    hp_change=-15,
+                    xp_reward=40,
+                    faction_reputation={"OBSERVER": 20, "DAWN": 10},
+                    flags_set={"chose_weaken": True, "boss_weakened": True},
+                ),
+            ],
+        ),
+
+        # ===== 事件3b: 分支 — 正面决战线 =====
+        Event(
+            event_id="c3_direct_path",
+            title="⚔️ 直面命运",
+            description=(
+                "你大步走进深渊领主的大殿。\n\n"
+                "黑色的火焰在他周身燃烧得更加猛烈——他感受到了你的挑战。\n"
+                "周围的暗影生物无一敢靠近，这是只属于你们两个的战斗。\n\n"
+                "「很好。不寻求捷径，不逃避战斗。」\n"
+                "「我欣赏你。作为回报——我会用全力将你击败。」\n\n"
+                "深渊领主高举巨剑，整座要塞都为之震颤。\n"
+                "这是一场无法回避的正面决战。"
+            ),
+            event_type=EventType.STORY,
+            required_flags={"chose_direct_fight": True},
+            choices=[
+                Choice(
+                    text="握紧武器，迎接决战",
+                    result_text="你的血液在沸腾。这将是一场荣耀的对决。",
+                    xp_reward=20,
+                    gold_reward=50,
+                    flags_set={"boss_strengthened": True},
+                ),
+            ],
+        ),
+
+        # ===== 事件3c: 分支 — 削弱线 =====
+        Event(
+            event_id="c3_weaken_path",
+            title="🕳 黑暗之井",
+            description=(
+                "你来到要塞最深处。\n\n"
+                "一口直径数十米的巨井深不见底，黑暗能量如液体般从井口涌出。\n"
+                "井壁上刻满了束缚符文——这口井不仅供给能量，还在囚禁着什么。\n\n"
+                "井口周围有数名深渊守卫在巡逻。\n"
+                "你必须突破他们，才能抵达井的核心。"
+            ),
+            event_type=EventType.CHOICE,
+            required_flags={"chose_weaken": True},
+            choices=[
+                Choice(
+                    text="⚔️ 击杀深渊守卫（战斗）",
+                    result_text="你拔剑冲向守卫！",
+                    trigger_combat=True, combat_enemy="void_walker",
+                    xp_reward=45,
+                    gold_reward=40,
+                    flags_set={"boss_weakened": True},
+                ),
+                Choice(
+                    text="🔮 远程封印黑暗之井（WIS检定 DC=13）",
+                    result_text="你凝聚意志，试图远程封印这口井。",
+                    check_type="wis", dc=13,
+                    success_text="你以精神力量凝聚封印符文，远程关闭了黑暗之井！深渊守卫甚至没来得及反应。",
+                    failure_text="你的意志力不够强大，封印未能完全生效。",
+                    critical_success_text="你不仅封印了黑暗之井，还将其中储存的暗影精华全部吸收！获得2点暗影精华。",
+                    critical_failure_text="黑暗能量突破了你的精神屏障！MP -15，且深渊守卫发现了你。",
+                    mp_change=-15,
+                    xp_reward=40,
+                    shadow_essence=2,
+                    flags_set={"boss_weakened": True},
+                ),
+            ],
+        ),
+
+        # ===== 事件4: 深渊领主（第三章Boss） =====
         Event(
             event_id="c3_boss",
             title="👑 深渊领主",
