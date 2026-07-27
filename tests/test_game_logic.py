@@ -2,11 +2,11 @@ import os
 import re
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-from game.chapter import ChapterManager
+from game.chapter import Chapter, ChapterManager
 from game.character import Character, CharClass
 from game.combat import ENEMY_TEMPLATES
 from game.engine import Game
@@ -172,6 +172,7 @@ class ContentAndProgressionTests(unittest.TestCase):
         game.player2 = None
         game.multiplayer = False
         game.event_log = []
+        game.sound = Mock()
 
         game._award_chapter_completion(1)
 
@@ -184,6 +185,7 @@ class ContentAndProgressionTests(unittest.TestCase):
         game = Game.__new__(Game)
         game.player = Character("测试者", CharClass.WARRIOR)
         game.chapter_manager = ChapterManager()
+        game.sound = Mock()
 
         game._open_shop()
         game.shop_items[3].stock = 0
@@ -191,6 +193,70 @@ class ContentAndProgressionTests(unittest.TestCase):
 
         self.assertEqual(game.shop_items[3].stock, 3)
         self.assertEqual(SHOP_CONSUMABLES[3].stock, 3)
+
+    def test_daily_seed_preserves_authored_story_order_and_progress(self):
+        manager = ChapterManager()
+        original_order = [
+            [event.event_id for event in chapter.events]
+            for chapter in manager.chapters
+        ]
+        manager.current_chapter_index = 2
+        manager.current_event_index = 3
+
+        manager.apply_daily_seed(seed=20260727)
+
+        self.assertEqual(
+            [[event.event_id for event in chapter.events] for chapter in manager.chapters],
+            original_order,
+        )
+        self.assertEqual(manager.current_chapter_index, 2)
+        self.assertEqual(manager.current_event_index, 3)
+
+    def test_daily_seed_only_shuffles_explicit_safe_groups(self):
+        def make_event(event_id, group=None, flags_set=None):
+            return Event(
+                event_id,
+                event_id,
+                "",
+                EventType.STORY,
+                [Choice("继续", "继续", flags_set=flags_set or {})],
+                shuffle_group=group,
+            )
+
+        def make_manager():
+            manager = ChapterManager.__new__(ChapterManager)
+            manager.chapters = [Chapter(
+                1,
+                "测试章",
+                "",
+                "",
+                events=[
+                    make_event("fixed-start"),
+                    make_event("random-a", "encounters"),
+                    make_event("random-b", "encounters"),
+                    make_event("branch", "encounters", {"path": True}),
+                    make_event("fixed-end"),
+                ],
+            )]
+            manager.current_chapter_index = 0
+            manager.current_event_index = 0
+            manager.flags = {}
+            return manager
+
+        manager = make_manager()
+        manager.apply_daily_seed(seed=7)
+        first_order = [event.event_id for event in manager.chapters[0].events]
+
+        same_seed_manager = make_manager()
+        same_seed_manager.apply_daily_seed(seed=7)
+        second_order = [
+            event.event_id for event in same_seed_manager.chapters[0].events
+        ]
+
+        self.assertEqual(first_order, second_order)
+        self.assertEqual(first_order[0], "fixed-start")
+        self.assertEqual(first_order[3:], ["branch", "fixed-end"])
+        self.assertEqual(set(first_order[1:3]), {"random-a", "random-b"})
 
 
 if __name__ == "__main__":
